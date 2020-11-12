@@ -4,6 +4,7 @@ import warnings
 from scipy.stats import entropy
 from sklearn.neighbors import NearestNeighbors
 from numpy.linalg import norm
+from tqdm import tqdm
 
 # Import CUDA version of approximate EMD, from https://github.com/zekunhao1995/pcgan-pytorch/
 from .StructuralLosses.match_cost import match_cost
@@ -82,13 +83,13 @@ def EMD_CD(sample_pcs, ref_pcs, batch_size, accelerated_cd=False, reduced=True):
     return results
 
 
-def _pairwise_EMD_CD_(sample_pcs, ref_pcs, batch_size, accelerated_cd=True):
+def _pairwise_EMD_CD_(sample_pcs, ref_pcs, batch_size=32, accelerated_cd=True):
     N_sample = sample_pcs.shape[0]
     N_ref = ref_pcs.shape[0]
     all_cd = []
     all_emd = []
     iterator = range(N_sample)
-    for sample_b_start in iterator:
+    for sample_b_start in tqdm(iterator, total=N_sample):
         sample_batch = sample_pcs[sample_b_start]
 
         cd_lst = []
@@ -169,7 +170,7 @@ def lgan_mmd_cov(all_dist):
     }
 
 
-def compute_all_metrics(sample_pcs, ref_pcs, batch_size, accelerated_cd=False):
+def compute_all_metrics(sample_pcs, ref_pcs, batch_size=32, accelerated_cd=False):
     results = {}
 
     M_rs_cd, M_rs_emd = _pairwise_EMD_CD_(ref_pcs, sample_pcs, batch_size, accelerated_cd=accelerated_cd)
