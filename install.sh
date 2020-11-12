@@ -3,7 +3,7 @@
 root=`pwd`
 
 # Install dependecies
-pip install numpy matplotlib pillow scipy tqdm scikit-learn -y
+pip install numpy matplotlib pillow scipy tqdm scikit-learn
 pip install torchdiffeq==0.0.1
 
 # Compile CUDA kernel for CD/EMD loss
