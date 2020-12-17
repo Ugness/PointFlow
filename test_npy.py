@@ -49,6 +49,7 @@ if __name__ == '__main__':
     parser.add_argument('--dir', type=str, help='folder which have emd_out_*.npys')
     parser.add_argument('--batch_size', type=int, default=32)
     args = parser.parse_args()
+    send_slack(f'{args.dir}: evaluation start')
     ref_pcs = np.load(os.path.join(args.dir, 'emd_out_ref.npy'))
     sample_pcs = np.load(os.path.join(args.dir, 'emd_out_smp.npy'))
     ref_pcs = torch.tensor(ref_pcs).cuda()
