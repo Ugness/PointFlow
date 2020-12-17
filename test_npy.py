@@ -44,6 +44,13 @@ def evaluate_gen(sample_pcs, ref_pcs):
     return results
 
 
+def spreadsheet_format(result_dict):
+    msg = ''
+    for key in result_dict.keys():
+        msg += f'{result_dict[key]}\t'
+    return msg
+
+
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--dir', type=str, help='folder which have emd_out_*.npys')
@@ -57,3 +64,4 @@ if __name__ == '__main__':
     with torch.no_grad():
         results = evaluate_gen(sample_pcs, ref_pcs)
     send_slack(args.dir + json.dumps(results, indent=4, sort_keys=True))
+    send_slack(spreadsheet_format(results))
