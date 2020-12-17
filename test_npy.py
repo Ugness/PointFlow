@@ -14,7 +14,6 @@ import torch.nn as nn
 import requests
 import json
 
-os.environ['SLACK'] = "https://hooks.slack.com/services/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"
 username = "VLLAB" if not "NAME" in os.environ.keys() else os.environ["NAME"]
 
 def send_slack(msg):
