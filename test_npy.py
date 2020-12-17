@@ -57,11 +57,14 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=32)
     args = parser.parse_args()
     send_slack(f'{args.dir}: evaluation start')
-    ref_pcs = np.load(os.path.join(args.dir, 'emd_out_ref.npy'))
-    sample_pcs = np.load(os.path.join(args.dir, 'emd_out_smp.npy'))
-    ref_pcs = torch.tensor(ref_pcs).cuda()
-    sample_pcs = torch.tensor(sample_pcs).cuda()
-    with torch.no_grad():
-        results = evaluate_gen(sample_pcs, ref_pcs)
-    send_slack(args.dir + json.dumps(results, indent=4, sort_keys=True))
-    send_slack(spreadsheet_format(results))
+    try:
+        ref_pcs = np.load(os.path.join(args.dir, 'emd_out_ref.npy'))
+        sample_pcs = np.load(os.path.join(args.dir, 'emd_out_smp.npy'))
+        ref_pcs = torch.tensor(ref_pcs).cuda()
+        sample_pcs = torch.tensor(sample_pcs).cuda()
+        with torch.no_grad():
+            results = evaluate_gen(sample_pcs, ref_pcs)
+        send_slack(args.dir + json.dumps(results, indent=4, sort_keys=True))
+        send_slack(spreadsheet_format(results))
+    except:
+        send_slack(f'ERROR: {args.dir} dead for some reason')
