@@ -62,9 +62,9 @@ class SetMultiMNIST(torch.utils.data.Dataset):
         xy = xy + torch.zeros_like(xy).uniform_(0., 1.)
         c = xy.size(0)
 
+        xy = torch.cat([xy.float(), pad], dim=0) / float(self.imgsize)  # scale [0, 1]
         '''
         pad = torch.zeros(self.sample_size - c, 2)
-        xy = torch.cat([xy.float(), pad], dim=0) / float(self.imgsize)  # scale [0, 1]
         mask = torch.ones(self.sample_size).byte()  # mask of which elements are invalid
         mask[:c].fill_(False)
         '''
