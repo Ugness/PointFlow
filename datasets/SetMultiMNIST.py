@@ -145,7 +145,7 @@ def collate_fn(batch):
 
     for k, v in ret.items():
         if v[0] is None:
-            ret[k] = None
+            ret[k] = 0
         else:
             try:
                 ret[k] = torch.stack(v)

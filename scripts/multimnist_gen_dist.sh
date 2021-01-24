@@ -33,7 +33,8 @@ python train.py \
     --no_writer \
     --val_freq 10 \
     --use_latent_flow \
-	--distributed
+	--distributed \
+    --num_workers 0
 
 echo "Done"
 exit 0
