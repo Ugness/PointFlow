@@ -93,29 +93,17 @@ def main_worker(gpu, save_dir, ngpus_per_node, args):
         print('Resumed from: ' + args.resume_checkpoint)
 
     # initialize datasets and loaders
-    tr_dataset, te_dataset = get_datasets(args)
-    if args.distributed:
-        train_sampler = torch.utils.data.distributed.DistributedSampler(tr_dataset)
-    else:
-        train_sampler = None
-
-    train_loader = torch.utils.data.DataLoader(
-        dataset=tr_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
-        num_workers=0, pin_memory=True, sampler=train_sampler, drop_last=True,
-        worker_init_fn=init_np_seed)
-    test_loader = torch.utils.data.DataLoader(
-        dataset=te_dataset, batch_size=args.batch_size, shuffle=False,
-        num_workers=0, pin_memory=True, drop_last=False,
-        worker_init_fn=init_np_seed)
+    tr_dataset, te_dataset, train_loader, test_loader, train_sampler = get_datasets(args)
 
     # save dataset statistics
     if not args.distributed or (args.rank % ngpus_per_node == 0):
-        np.save(os.path.join(save_dir, "train_set_mean.npy"), tr_dataset.all_points_mean)
-        np.save(os.path.join(save_dir, "train_set_std.npy"), tr_dataset.all_points_std)
-        np.save(os.path.join(save_dir, "train_set_idx.npy"), np.array(tr_dataset.shuffle_idx))
-        np.save(os.path.join(save_dir, "val_set_mean.npy"), te_dataset.all_points_mean)
-        np.save(os.path.join(save_dir, "val_set_std.npy"), te_dataset.all_points_std)
-        np.save(os.path.join(save_dir, "val_set_idx.npy"), np.array(te_dataset.shuffle_idx))
+        if args.dataset_type != 'multimnist':
+            np.save(os.path.join(save_dir, "train_set_mean.npy"), tr_dataset.all_points_mean)
+            np.save(os.path.join(save_dir, "train_set_std.npy"), tr_dataset.all_points_std)
+            np.save(os.path.join(save_dir, "train_set_idx.npy"), np.array(tr_dataset.shuffle_idx))
+            np.save(os.path.join(save_dir, "val_set_mean.npy"), te_dataset.all_points_mean)
+            np.save(os.path.join(save_dir, "val_set_std.npy"), te_dataset.all_points_std)
+            np.save(os.path.join(save_dir, "val_set_idx.npy"), np.array(te_dataset.shuffle_idx))
 
     # load classification dataset if needed
     if args.eval_classification:
@@ -157,10 +145,7 @@ def main_worker(gpu, save_dir, ngpus_per_node, args):
         print("[Rank %d] World size : %d" % (args.rank, dist.get_world_size()))
 
     print("Start epoch: %d End epoch: %d" % (start_epoch, args.epochs))
-    ep_start_time = time.time()
     for epoch in range(start_epoch, args.epochs):
-        print(f'Time spent for Epoch{epoch} {time.time() - ep_start_time}')
-        ep_start_time = time.time()
         if args.distributed:
             train_sampler.set_epoch(epoch)
 
@@ -184,14 +169,12 @@ def main_worker(gpu, save_dir, ngpus_per_node, args):
             entropy_avg_meter.update(entropy)
             point_nats_avg_meter.update(recon_nats)
             latent_nats_avg_meter.update(prior_nats)
-            """
             if step % args.log_freq == 0:
                 duration = time.time() - start_time
                 start_time = time.time()
                 print("[Rank %d] Epoch %d Batch [%2d/%2d] Time [%3.2fs] Entropy %2.5f LatentNats %2.5f PointNats %2.5f"
                       % (args.rank, epoch, bidx, len(train_loader), duration, entropy_avg_meter.avg,
                          latent_nats_avg_meter.avg, point_nats_avg_meter.avg))
-            """
 
         # evaluate on the validation set
         if not args.no_validation and (epoch + 1) % args.val_freq == 0:

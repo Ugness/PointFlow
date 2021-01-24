@@ -3,7 +3,7 @@ import torch
 from torch.utils import data
 
 from .ShapeNet import ShapeNet15kPointClouds, _get_MN10_datasets_, _get_MN40_datasets_
-from .SetMultiMNIST import SetMultiMNIST
+from .SetMultiMNIST import SetMultiMNIST, build
 
 def get_datasets(args):
     if args.dataset_type == 'shapenet15k':
@@ -33,12 +33,25 @@ def get_datasets(args):
         tr_dataset, te_dataset = _get_MN10_datasets_(args)
     elif args.dataset_type == 'multimnist':
         assert args.tr_max_sample_points == args.te_max_sample_points
-        tr_dataset = SetMultiMNIST(split='train', sample_size=args.multimnist_sample_size)
-        te_dataset = SetMultiMNIST(split='val', sample_size=args.multimnist_sample_size)
+        return build(args)
     else:
         raise Exception("Invalid dataset type:%s" % args.dataset_type)
 
-    return tr_dataset, te_dataset
+    if args.distributed:
+        train_sampler = torch.utils.data.distributed.DistributedSampler(tr_dataset)
+    else:
+        train_sampler = None
+
+    tr_loader = torch.utils.data.DataLoader(
+        dataset=tr_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
+        num_workers=0, pin_memory=True, sampler=train_sampler, drop_last=True,
+        worker_init_fn=init_np_seed)
+    te_loader = torch.utils.data.DataLoader(
+        dataset=te_dataset, batch_size=args.batch_size, shuffle=False,
+        num_workers=0, pin_memory=True, drop_last=False,
+        worker_init_fn=init_np_seed)
+
+    return tr_dataset, te_dataset, tr_loader, te_loader, train_sampler
 
 
 def get_data_loaders(args):

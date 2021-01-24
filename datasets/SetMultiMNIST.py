@@ -8,6 +8,7 @@ import random
 
 import torch
 import torch.utils.data
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import torchvision.transforms as transforms
 
@@ -45,25 +46,29 @@ class SetMultiMNIST(torch.utils.data.Dataset):
             self.imgsize = self.train_multimnist.data.shape[1]
             self.train_points = self._process_cache(self.train_multimnist, self.sample_size)
             self._filter(self.digits)
-            print(f"Total number of data: {self.train_multimnist.data.shape[0]} -> {len(self.train_multimnist)}")
+            print(f"Total number of data: {self.train_multimnist.data.shape[0]} -> {len(self.train_points)}")
         else:
             self.test_multimnist = MultiMNIST(train=False, transform=transform, mnist_path=self.mnist_path, root=self.root)
             self.imgsize = self.test_multimnist.data.shape[1]
             self.test_points = self._process_cache(self.test_multimnist, self.sample_size)
             self._filter(self.digits)
-            print(f"Total number of data: {self.test_multimnist.data.shape[0]} -> {len(self.test_multimnist)}")
+            print(f"Total number of data: {self.test_multimnist.data.shape[0]} -> {len(self.test_points)}")
         print("Cardinality: %d" % self.sample_size)
 
     def image_to_set(self, image):
+        image = F.upsample_bilinear(image.unsqueeze(0), scale_factor=2)[0]
         xy = (image.squeeze(0) > self.threshold).nonzero().float()  # [M, 2]
         xy = xy[torch.randperm(xy.size(0)), :]  # [M, 2]
         xy = xy + torch.zeros_like(xy).uniform_(0., 1.)
         c = xy.size(0)
-        pad = torch.zeros(self.max - c, 2)
+
+        '''
+        pad = torch.zeros(self.sample_size - c, 2)
         xy = torch.cat([xy.float(), pad], dim=0) / float(self.imgsize)  # scale [0, 1]
-        mask = torch.ones(self.max).bool()  # mask of which elements are invalid
+        mask = torch.ones(self.sample_size).byte()  # mask of which elements are invalid
         mask[:c].fill_(False)
-        return xy, mask
+        '''
+        return xy, None
 
     def _process_cache(self, dataset, sample_size):
         cache_path = os.path.join(self.cache_dir, f"multimnist_{self.split}_{self.threshold}.pth")
@@ -78,8 +83,7 @@ class SetMultiMNIST(torch.utils.data.Dataset):
             img, label, coord = datapoint
             label = torch.tensor(label)
             coord = torch.tensor(coord)
-            s, s_mask = self.image_to_set(img)
-            s = s[~s_mask]
+            s, _ = self.image_to_set(img)
             if len(s) < sample_size:
                 continue
             s = s[np.random.choice(len(s), sample_size)]
@@ -111,10 +115,10 @@ class SetMultiMNIST(torch.utils.data.Dataset):
             else:
                 self.test_points = [te for te in self.test_points if te['cate_idx'] in digits]
         if self.split == 'train':
-            tr_sample_size = max([(~tr['mask']).long().sum() for tr in self.train_points])
+            tr_sample_size = self.sample_size
             return tr_sample_size
         else:
-            te_sample_size = max([(~te['mask']).long().sum() for te in self.test_points])
+            te_sample_size = self.sample_size
             return te_sample_size
 
     @staticmethod
@@ -139,38 +143,35 @@ def collate_fn(batch):
     for k, v in batch[0].items():
         ret.update({k: [b[k] for b in batch]})
 
-    s = torch.stack(ret['set'], dim=0)  # [B, N, 2]
-    mask = torch.stack(ret['mask'], dim=0).bool()  # [B, N]
-    labels = torch.stack(ret['cate_idx'], dim=0)  # [B, N]
-    coords = torch.stack(ret['xyxy'], dim=0)  # [B, N]
-    cardinality = (~mask).long().sum(dim=-1)  # [B,]
+    for k, v in ret.items():
+        if v[0] is None:
+            ret[k] = None
+        else:
+            try:
+                ret[k] = torch.stack(v)
+            except TypeError:
+                ret[k] = torch.tensor(v)
 
-    ret.update({'set': s, 'set_mask': mask, 'cardinality': cardinality,
-                'cate_idx':labels, 'xyxy':coords,
-                'mean': 0., 'std': 1.})
     return ret
 
 
 def build(args):
-    train_dataset = SetMultiMNIST(digits=args.digits,
-                                  split='train',
-                                  threshold=args.threshold,
-                                  root=args.multimnist_data_dir,
-                                  mnist_root=args.mnist_data_dir,
-                                  cache_dir=args.multimnist_cache)
-    train_sampler = torch.utils.data.RandomSampler(train_dataset)
+    train_dataset = SetMultiMNIST(split='train',
+                                  sample_size=args.multimnist_sample_size,
+                                  )
+    if args.distributed:
+        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+    else:
+        train_sampler = None
     train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
                               pin_memory=True, sampler=train_sampler, drop_last=True, num_workers=args.num_workers,
                               collate_fn=collate_fn, worker_init_fn=init_np_seed)
 
-    val_dataset = SetMultiMNIST(digits=args.digits,
-                                split='val',
-                                threshold=args.threshold,
-                                root=args.multimnist_data_dir,
-                                mnist_root=args.mnist_data_dir,
-                                cache_dir=args.multimnist_cache)
+    val_dataset = SetMultiMNIST(split='val',
+                                sample_size=args.multimnist_sample_size,
+                                )
     val_loader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, shuffle=False,
                             pin_memory=True, drop_last=False, num_workers=args.num_workers,
                             collate_fn=collate_fn, worker_init_fn=init_np_seed)
 
-    return train_dataset, val_dataset, train_loader, val_loader
+    return train_dataset, val_dataset, train_loader, val_loader, train_sampler
