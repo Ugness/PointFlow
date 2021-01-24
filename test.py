@@ -107,6 +107,10 @@ def evaluate_gen(model, args):
         B, N = te_pc.size(0), te_pc.size(1)
         _, out_pc = model.sample(B, N)
 
+        if args.standardize_per_shape:
+            te_pc -= te_pc.mean(-2, keepdim=True)
+            out_pc -= out_pc.mean(-2, keepdim=True)
+
         # denormalize
         m, s = data['mean'].float(), data['std'].float()
         m = m.cuda() if args.gpu is None else m.cuda(args.gpu)
