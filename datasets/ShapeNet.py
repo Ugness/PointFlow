@@ -277,11 +277,6 @@ class ShapeNet15kPointClouds(Uniform15KPC):
             input_dim=3)
 
 
-def init_np_seed(worker_id):
-    seed = torch.initial_seed()
-    np.random.seed(seed % 4294967296)
-
-
 def _get_MN40_datasets_(args, data_dir=None):
     tr_dataset = ModelNet40PointClouds(
         split='train',
@@ -327,66 +322,11 @@ def _get_MN10_datasets_(args, data_dir=None):
     return tr_dataset, te_dataset
 
 
-def get_datasets(args):
-    if args.dataset_type == 'shapenet15k':
-        tr_dataset = ShapeNet15kPointClouds(
-            categories=args.cates, split='train',
-            tr_sample_size=args.tr_max_sample_points,
-            te_sample_size=args.te_max_sample_points,
-            scale=args.dataset_scale, root_dir=args.data_dir,
-            standardize_per_shape=args.standardize_per_shape,
-            normalize_per_shape=args.normalize_per_shape,
-            normalize_std_per_axis=args.normalize_std_per_axis,
-            random_subsample=True)
-        te_dataset = ShapeNet15kPointClouds(
-            categories=args.cates, split='val',
-            tr_sample_size=args.tr_max_sample_points,
-            te_sample_size=args.te_max_sample_points,
-            scale=args.dataset_scale, root_dir=args.data_dir,
-            standardize_per_shape=args.standardize_per_shape,
-            normalize_per_shape=args.normalize_per_shape,
-            normalize_std_per_axis=args.normalize_std_per_axis,
-            all_points_mean=tr_dataset.all_points_mean,
-            all_points_std=tr_dataset.all_points_std,
-        )
-    elif args.dataset_type == 'modelnet40_15k':
-        tr_dataset, te_dataset = _get_MN40_datasets_(args)
-    elif args.dataset_type == 'modelnet10_15k':
-        tr_dataset, te_dataset = _get_MN10_datasets_(args)
-    else:
-        raise Exception("Invalid dataset type:%s" % args.dataset_type)
-
-    return tr_dataset, te_dataset
-
-
 def get_clf_datasets(args):
     return {
         'MN40': _get_MN40_datasets_(args, data_dir=args.mn40_data_dir),
         'MN10': _get_MN10_datasets_(args, data_dir=args.mn10_data_dir),
     }
-
-
-def get_data_loaders(args):
-    tr_dataset, te_dataset = get_datasets(args)
-    train_loader = data.DataLoader(
-        dataset=tr_dataset, batch_size=args.batch_size,
-        shuffle=True, num_workers=args.num_workers, drop_last=True,
-        worker_init_fn=init_np_seed)
-    train_unshuffle_loader = data.DataLoader(
-        dataset=tr_dataset, batch_size=args.batch_size,
-        shuffle=False, num_workers=args.num_workers, drop_last=True,
-        worker_init_fn=init_np_seed)
-    test_loader = data.DataLoader(
-        dataset=te_dataset, batch_size=args.batch_size,
-        shuffle=False, num_workers=args.num_workers, drop_last=False,
-        worker_init_fn=init_np_seed)
-
-    loaders = {
-        "test_loader": test_loader,
-        'train_loader': train_loader,
-        'train_unshuffle_loader': train_unshuffle_loader,
-    }
-    return loaders
 
 
 if __name__ == "__main__":
