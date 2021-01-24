@@ -133,6 +133,7 @@ class PointFlow(nn.Module):
         return opt
 
     def forward(self, x, opt, step, writer=None):
+        start = time()
         opt.zero_grad()
         batch_size = x.size(0)
         num_points = x.size(1)
@@ -172,6 +173,8 @@ class PointFlow(nn.Module):
         loss = entropy_loss + prior_loss + recon_loss
         loss.backward()
         opt.step()
+        end = time()
+        print(end-start)
 
         # LOGGING (after the training)
         if self.distributed:

@@ -324,10 +324,14 @@ def save(model, optimizer, epoch, path):
 
 def resume(path, model, optimizer=None, strict=True):
     ckpt = torch.load(path)
-    model.load_state_dict(ckpt['model'], strict=strict)
-    start_epoch = ckpt['epoch']
-    if optimizer is not None:
-        optimizer.load_state_dict(ckpt['optimizer'])
+    if 'model' in ckpt.keys():
+        model.load_state_dict(ckpt['model'], strict=strict)
+        start_epoch = ckpt['epoch']
+        if optimizer is not None:
+            optimizer.load_state_dict(ckpt['optimizer'])
+    else:
+        model.load_state_dict(ckpt)
+        start_epoch=0
     return model, optimizer, start_epoch
 
 
