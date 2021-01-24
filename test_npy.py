@@ -46,8 +46,9 @@ def evaluate_gen(sample_pcs, ref_pcs):
 
 def spreadsheet_format(result_dict):
     msg = ''
-    for key in result_dict.keys():
-        msg += f'{result_dict[key]}\t'
+    keys = ['1-NN-CD-acc', '1-NN-EMD-acc', 'lgan_cov-CD', 'lgan_cov-EMD', 'lgan_mmd-CD', 'lgan_mmd-EMD']
+    for key in keys:
+        msg += f'{result_dict[key]},'
     return msg
 
 
