@@ -35,6 +35,7 @@ cate_to_synsetid = {v: k for k, v in synsetid_to_cate.items()}
 class Uniform15KPC(Dataset):
     def __init__(self, root_dir, subdirs, tr_sample_size=10000,
                  te_sample_size=10000, split='train', scale=1.,
+                 standardize_per_shape=False,
                  normalize_per_shape=False, random_subsample=False,
                  normalize_std_per_axis=False,
                  all_points_mean=None, all_points_std=None,
@@ -89,6 +90,7 @@ class Uniform15KPC(Dataset):
         self.all_points = np.concatenate(self.all_points)  # (N, 15000, 3)
         self.normalize_per_shape = normalize_per_shape
         self.normalize_std_per_axis = normalize_std_per_axis
+        self.standardize_per_shape = standardize_per_shape
         if all_points_mean is not None and all_points_std is not None:  # using loaded dataset stats
             self.all_points_mean = all_points_mean
             self.all_points_std = all_points_std
@@ -100,6 +102,8 @@ class Uniform15KPC(Dataset):
             else:
                 self.all_points_std = self.all_points.reshape(B, -1).std(axis=1).reshape(B, 1, 1)
         else:  # normalize across the dataset
+            if self.standardize_per_shape:
+                self.all_points -= self.all_points.mean(-2, keepdims=True)
             self.all_points_mean = self.all_points.reshape(-1, input_dim).mean(axis=0).reshape(1, 1, input_dim)
             if normalize_std_per_axis:
                 self.all_points_std = self.all_points.reshape(-1, input_dim).std(axis=0).reshape(1, 1, input_dim)
@@ -243,7 +247,8 @@ class ShapeNet15kPointClouds(Uniform15KPC):
                  split='train', scale=1., normalize_per_shape=False,
                  normalize_std_per_axis=False,
                  random_subsample=False,
-                 all_points_mean=None, all_points_std=None):
+                 all_points_mean=None, all_points_std=None,
+                 standardize_per_shape=False):
         self.root_dir = root_dir
         self.split = split
         assert self.split in ['train', 'test', 'val']
@@ -264,6 +269,7 @@ class ShapeNet15kPointClouds(Uniform15KPC):
             tr_sample_size=tr_sample_size,
             te_sample_size=te_sample_size,
             split=split, scale=scale,
+            standardize_per_shape=standardize_per_shape,
             normalize_per_shape=normalize_per_shape,
             normalize_std_per_axis=normalize_std_per_axis,
             random_subsample=random_subsample,
@@ -328,6 +334,7 @@ def get_datasets(args):
             tr_sample_size=args.tr_max_sample_points,
             te_sample_size=args.te_max_sample_points,
             scale=args.dataset_scale, root_dir=args.data_dir,
+            standardize_per_shape=args.standardize_per_shape,
             normalize_per_shape=args.normalize_per_shape,
             normalize_std_per_axis=args.normalize_std_per_axis,
             random_subsample=True)
@@ -336,6 +343,7 @@ def get_datasets(args):
             tr_sample_size=args.tr_max_sample_points,
             te_sample_size=args.te_max_sample_points,
             scale=args.dataset_scale, root_dir=args.data_dir,
+            standardize_per_shape=args.standardize_per_shape,
             normalize_per_shape=args.normalize_per_shape,
             normalize_std_per_axis=args.normalize_std_per_axis,
             all_points_mean=tr_dataset.all_points_mean,

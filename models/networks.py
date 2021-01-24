@@ -7,6 +7,7 @@ from models.flow import get_point_cnf
 from models.flow import get_latent_cnf
 from utils import truncated_normal, reduce_tensor, standard_normal_logprob
 
+from time import time
 
 class Encoder(nn.Module):
     def __init__(self, zdim, input_dim=3, use_deterministic_encoder=False):
@@ -112,6 +113,11 @@ class PointFlow(nn.Module):
         self.point_cnf = f(self.point_cnf)
         self.latent_cnf = f(self.latent_cnf)
 
+    def multi_gpu_unwrapper(self):
+        self.encoder = self.encoder.module.cuda()
+        self.point_cnf = self.point_cnf.module.cuda()
+        self.latent_cnf = self.latent_cnf.module.cuda()
+
     def make_optimizer(self, args):
         def _get_opt_(params):
             if args.optimizer == 'adam':
@@ -209,12 +215,14 @@ class PointFlow(nn.Module):
 
     def sample(self, batch_size, num_points, truncate_std=None, truncate_std_latent=None, gpu=None):
         assert self.use_latent_flow, "Sampling requires `self.use_latent_flow` to be True."
+        start = time()
         # Generate the shape code from the prior
         w = self.sample_gaussian((batch_size, self.zdim), truncate_std_latent, gpu=gpu)
         z = self.latent_cnf(w, None, reverse=True).view(*w.size())
         # Sample points conditioned on the shape code
         y = self.sample_gaussian((batch_size, num_points, self.input_dim), truncate_std, gpu=gpu)
         x = self.point_cnf(y, z, reverse=True).view(*y.size())
+        print(batch_size, time() - start)
         return z, x
 
     def reconstruct(self, x, num_points=None, truncate_std=None):

@@ -153,6 +153,7 @@ def main(args):
     model.load_state_dict(checkpoint)
     model.eval()
 
+
     with torch.no_grad():
         if args.evaluate_recon:
             # Evaluate reconstruction

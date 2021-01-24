@@ -42,8 +42,11 @@ def main_worker(gpu, save_dir, ngpus_per_node, args):
     else:
         log_dir = "runs/time-%d" % time.time()
 
-    if not args.distributed or (args.rank % ngpus_per_node == 0):
-        writer = SummaryWriter(logdir=log_dir)
+    if not args.no_writer:
+        if not args.distributed or (args.rank % ngpus_per_node == 0):
+            writer = SummaryWriter(logdir=log_dir)
+        else:
+            writer = None
     else:
         writer = None
 
@@ -154,7 +157,10 @@ def main_worker(gpu, save_dir, ngpus_per_node, args):
         print("[Rank %d] World size : %d" % (args.rank, dist.get_world_size()))
 
     print("Start epoch: %d End epoch: %d" % (start_epoch, args.epochs))
+    ep_start_time = time.time()
     for epoch in range(start_epoch, args.epochs):
+        print(f'Time spent for Epoch{epoch} {time.time() - ep_start_time}')
+        ep_start_time = time.time()
         if args.distributed:
             train_sampler.set_epoch(epoch)
 
@@ -178,12 +184,14 @@ def main_worker(gpu, save_dir, ngpus_per_node, args):
             entropy_avg_meter.update(entropy)
             point_nats_avg_meter.update(recon_nats)
             latent_nats_avg_meter.update(prior_nats)
+            """
             if step % args.log_freq == 0:
                 duration = time.time() - start_time
                 start_time = time.time()
                 print("[Rank %d] Epoch %d Batch [%2d/%2d] Time [%3.2fs] Entropy %2.5f LatentNats %2.5f PointNats %2.5f"
                       % (args.rank, epoch, bidx, len(train_loader), duration, entropy_avg_meter.avg,
                          latent_nats_avg_meter.avg, point_nats_avg_meter.avg))
+            """
 
         # evaluate on the validation set
         if not args.no_validation and (epoch + 1) % args.val_freq == 0:

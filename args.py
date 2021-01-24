@@ -80,6 +80,8 @@ def add_args(parser):
                         help='Scale of the dataset (x,y,z * scale = real output, default=1).')
     parser.add_argument('--random_rotate', action='store_true',
                         help='Whether to randomly rotate each shape.')
+    parser.add_argument('--standardize_per_shape', action='store_true',
+                        help='Whether to perform zero-centering.')
     parser.add_argument('--normalize_per_shape', action='store_true',
                         help='Whether to perform normalization per shape.')
     parser.add_argument('--normalize_std_per_axis', action='store_true',
@@ -97,6 +99,7 @@ def add_args(parser):
     parser.add_argument('--val_freq', type=int, default=10)
     parser.add_argument('--log_freq', type=int, default=10)
     parser.add_argument('--save_freq', type=int, default=10)
+    parser.add_argument('--no_writer', action='store_true')
 
     # validation options
     parser.add_argument('--no_validation', action='store_true',

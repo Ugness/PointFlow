@@ -27,8 +27,10 @@ python train.py \
     --zdim ${zdim} \
     --epochs ${epochs} \
     --save_freq 50 \
-    --viz_freq 1 \
-    --log_freq 1 \
+    --viz_freq 999999 \
+    --log_freq 999999 \
+	--no_validation \
+	--no_writer \
     --val_freq 10 \
     --use_latent_flow
 
