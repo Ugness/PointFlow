@@ -91,6 +91,8 @@ class Uniform15KPC(Dataset):
         self.normalize_per_shape = normalize_per_shape
         self.normalize_std_per_axis = normalize_std_per_axis
         self.standardize_per_shape = standardize_per_shape
+        if self.standardize_per_shape:
+            self.all_points -= self.all_points.mean(-2, keepdims=True)
         if all_points_mean is not None and all_points_std is not None:  # using loaded dataset stats
             self.all_points_mean = all_points_mean
             self.all_points_std = all_points_std
@@ -102,8 +104,6 @@ class Uniform15KPC(Dataset):
             else:
                 self.all_points_std = self.all_points.reshape(B, -1).std(axis=1).reshape(B, 1, 1)
         else:  # normalize across the dataset
-            if self.standardize_per_shape:
-                self.all_points -= self.all_points.mean(-2, keepdims=True)
             self.all_points_mean = self.all_points.reshape(-1, input_dim).mean(axis=0).reshape(1, 1, input_dim)
             if normalize_std_per_axis:
                 self.all_points_std = self.all_points.reshape(-1, input_dim).std(axis=0).reshape(1, 1, input_dim)

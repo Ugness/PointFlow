@@ -24,7 +24,7 @@ def send_slack(msg):
 
     dump = {
             'username': username,
-            'channel': 'setvae-arxiv-tuning',
+            'channel': 'cvpr2021',
             'icon_emoji': ':hearts:',
             'text': msg
             }
