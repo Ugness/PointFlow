@@ -24,7 +24,7 @@ python train.py \
     --batch_size ${batch_size} \
     --zdim ${zdim} \
     --epochs ${epochs} \
-    --save_freq 1 \
+    --save_freq 10 \
     --viz_freq 999999 \
     --log_freq 999999 \
     --no_validation \
