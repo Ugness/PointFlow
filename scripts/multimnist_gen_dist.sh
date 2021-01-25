@@ -32,7 +32,9 @@ python train.py \
     --no_validation \
     --no_writer \
     --val_freq 10 \
-    --use_latent_flow
+    --use_latent_flow \
+	--distributed \
+    --num_workers 0
 
 echo "Done"
 exit 0
