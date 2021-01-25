@@ -19,7 +19,7 @@ def get_test_loader(args):
     return loader
 
 
-def sample_gen(model, args):
+def sample_gen(model, args, epoch):
     loader = get_test_loader(args)
     all_sample = []
     all_ref = []
@@ -45,7 +45,8 @@ def sample_gen(model, args):
           % (sample_pcs.size(), ref_pcs.size()))
 
     # Save the generative output
-    save_dir = os.path.dirname(args.resume_checkpoint)
+    save_dir = os.path.join(os.path.dirname(args.resume_checkpoint), epoch)
+    os.mkdirs(save_dir, exist_ok=True)
     np.save(os.path.join(save_dir, "emd_out_smp.npy"), sample_pcs.cpu().detach().numpy())
     np.save(os.path.join(save_dir, "emd_out_ref.npy"), ref_pcs.cpu().detach().numpy())
     print("Done")
@@ -63,11 +64,12 @@ def main(args):
 
     print("Resume Path:%s" % args.resume_checkpoint)
     checkpoint = torch.load(args.resume_checkpoint)
-    model.load_state_dict(checkpoint)
+    model.load_state_dict(checkpoint['model'])
     model.eval()
+    epoch = checkpoint['epoch']
 
     with torch.no_grad():
-        sample_gen(model, args)
+        sample_gen(model, args, epoch)
 
 
 
