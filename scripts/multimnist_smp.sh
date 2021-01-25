@@ -15,7 +15,7 @@ log_name="gen/multimnist"
 resume_checkpoint="checkpoints/gen/multimnist/checkpoint-latest.pt"
 
 python extract_sample_ref.py \
-    --resume_checkpoint ${} \
+    --resume_checkpoint ${resume_checkpoint} \
     --log_name ${log_name} \
     --lr ${lr} \
     --dataset_type ${ds} \
