@@ -66,7 +66,6 @@ def main(args):
     model.load_state_dict(checkpoint)
     model.eval()
 
-
     with torch.no_grad():
         sample_gen(model, args)
 
