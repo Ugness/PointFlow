@@ -35,7 +35,6 @@ python extract_sample_ref.py \
     --no_writer \
     --val_freq 10 \
     --use_latent_flow \
-    --distributed \
     --num_workers 0
 
 
