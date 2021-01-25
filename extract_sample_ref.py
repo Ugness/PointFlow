@@ -1,10 +1,5 @@
 from datasets import get_datasets, synsetid_to_cate
 from args import get_args
-from pprint import pprint
-from metrics.evaluation_metrics import EMD_CD
-from metrics.evaluation_metrics import jsd_between_point_cloud_sets as JSD
-from metrics.evaluation_metrics import compute_all_metrics
-from collections import defaultdict
 from models.networks import PointFlow
 import os
 import torch
