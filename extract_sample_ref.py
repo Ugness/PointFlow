@@ -1,4 +1,4 @@
-from datasets import get_datasets, synsetid_to_cate
+from datasets import get_datasets
 from args import get_args
 from models.networks import PointFlow
 import os
